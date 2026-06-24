@@ -11,12 +11,32 @@
 - 数据保存在浏览器 `localStorage` 中
 - 一键导出 CSV，方便用 Excel/WPS 继续分析
 
-## 使用方法
+## 在自己电脑上打开
 
-直接用浏览器打开 `index.html`，或在项目目录启动一个本地服务：
+### 最简单方式
+
+1. 把整个项目文件夹下载到你的电脑。
+2. 双击 `index.html` 即可打开软件。
+3. 录入的数据会保存在当前电脑的浏览器里。
+
+> 注意：不要只复制 `index.html` 一个文件，`styles.css` 和 `app.js` 也要放在同一个文件夹里。
+
+### Windows 推荐方式
+
+双击 `start-windows.bat`，它会自动启动本地服务并打开浏览器。
+
+### Mac / Linux 推荐方式
+
+在项目目录执行：
+
+```bash
+./start-mac-linux.sh
+```
+
+或者手动启动：
 
 ```bash
 python3 -m http.server 4173
 ```
 
-然后访问 <http://localhost:4173>。
+然后访问 <http://localhost:4173/index.html>。

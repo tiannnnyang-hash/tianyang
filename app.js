@@ -25,7 +25,7 @@ function persist() {
 function saveRecord(event) {
   event.preventDefault();
   const record = {
-    id: document.querySelector('#recordId').value || crypto.randomUUID(),
+    id: document.querySelector('#recordId').value || createId(),
     date: document.querySelector('#date').value,
     employee: document.querySelector('#employee').value.trim(),
     consultations: Number(document.querySelector('#consultations').value),
@@ -117,6 +117,11 @@ function exportCsv() {
   link.download = `旅游员工数据-${new Date().toISOString().slice(0, 10)}.csv`;
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+function createId() {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+  return `record-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function csvCell(value) {
