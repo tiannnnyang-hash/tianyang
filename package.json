@@ -1,0 +1,37 @@
+{
+  "name": "travel-sales-dashboard",
+  "version": "1.0.0",
+  "description": "旅游员工每日业绩统计 Windows 桌面应用",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "package:win": "electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.travel.sales.dashboard",
+    "productName": "旅游员工每日业绩统计",
+    "files": [
+      "electron/**/*",
+      "travel-dashboard.html",
+      "README.md"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "旅游员工每日业绩统计"
+    }
+  }
+}

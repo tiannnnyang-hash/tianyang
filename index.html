@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>旅游员工数据统计</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Travel Sales Dashboard</p>
+      <h1>旅游员工每日业绩统计</h1>
+      <p class="subtitle">记录每位员工每天的咨询量、加粉量、成交单数、成交率和成交金额，并自动汇总团队表现。</p>
+    </div>
+    <button id="exportBtn" class="secondary">导出 CSV</button>
+  </header>
+
+  <main>
+    <section class="cards" aria-label="团队数据总览">
+      <article class="card"><span>总咨询量</span><strong id="totalConsultations">0</strong></article>
+      <article class="card"><span>总加粉量</span><strong id="totalFollowers">0</strong></article>
+      <article class="card"><span>总成交单数</span><strong id="totalDeals">0</strong></article>
+      <article class="card"><span>平均成交率</span><strong id="avgRate">0%</strong></article>
+      <article class="card"><span>总成交金额</span><strong id="totalAmount">¥0</strong></article>
+      <article class="card"><span>总消费</span><strong id="totalSpend">¥0</strong></article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">
+        <h2>新增 / 编辑每日记录</h2>
+        <p>成交率会按“成交单数 ÷ 咨询量”自动计算。</p>
+      </div>
+      <form id="recordForm" class="form-grid">
+        <input type="hidden" id="recordId">
+        <label>日期<input id="date" type="date" required></label>
+        <label>员工姓名<input id="employee" type="text" placeholder="例如：小王" required></label>
+        <label>咨询量<input id="consultations" type="number" min="0" step="1" value="0" required></label>
+        <label>加粉量<input id="followers" type="number" min="0" step="1" value="0" required></label>
+        <label>成交单数<input id="deals" type="number" min="0" step="1" value="0" required></label>
+        <label>成交金额<input id="amount" type="number" min="0" step="0.01" value="0" required></label>
+        <label>当天消费<input id="spend" type="number" min="0" step="0.01" value="0" required></label>
+        <div class="form-actions">
+          <button type="submit" id="saveBtn">保存记录</button>
+          <button type="button" id="resetBtn" class="secondary">清空表单</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="toolbar">
+        <div>
+          <h2>员工汇总</h2>
+          <p>这里会按每个员工单独汇总，不会和其他员工混在一起。</p>
+        </div>
+      </div>
+      <div class="table-wrap compact">
+        <table>
+          <thead>
+            <tr>
+              <th>员工</th>
+              <th>咨询量</th>
+              <th>加粉量</th>
+              <th>成交单数</th>
+              <th>成交率</th>
+              <th>成交金额</th>
+              <th>消费</th>
+            </tr>
+          </thead>
+          <tbody id="employeeSummaryBody"></tbody>
+        </table>
+        <p id="employeeEmptyState" class="empty">还没有员工汇总，请先新增记录。</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="toolbar">
+        <div>
+          <h2>数据明细</h2>
+          <p>先选择员工，再查看该员工每天的详细数据；也可按日期搜索。</p>
+        </div>
+        <div class="filters">
+          <select id="employeeFilter" aria-label="按员工筛选">
+            <option value="">全部员工</option>
+          </select>
+          <input id="search" type="search" placeholder="搜索员工或日期...">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>员工</th>
+              <th>咨询量</th>
+              <th>加粉量</th>
+              <th>成交单数</th>
+              <th>成交率</th>
+              <th>成交金额</th>
+              <th>消费</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="recordsBody"></tbody>
+        </table>
+        <p id="emptyState" class="empty">还没有记录，请先新增一条员工数据。</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

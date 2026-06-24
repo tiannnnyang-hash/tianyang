@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>旅游员工数据统计</title>
+  <style>
+:root {
+  color-scheme: light;
+  --primary: #0f766e;
+  --primary-dark: #115e59;
+  --bg: #f4fbfa;
+  --card: #ffffff;
+  --text: #12312f;
+  --muted: #64748b;
+  --border: #d8e8e6;
+  --danger: #dc2626;
+  font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+.hero { display: flex; justify-content: space-between; gap: 1rem; align-items: center; padding: 2rem clamp(1rem, 4vw, 4rem); background: linear-gradient(135deg, #0f766e, #14b8a6); color: white; }
+.eyebrow { margin: 0 0 .4rem; letter-spacing: .12em; text-transform: uppercase; opacity: .8; font-size: .8rem; }
+h1, h2, p { margin-top: 0; }
+h1 { margin-bottom: .5rem; font-size: clamp(1.8rem, 4vw, 3rem); }
+.subtitle { max-width: 48rem; margin-bottom: 0; opacity: .9; }
+main { width: min(1180px, calc(100% - 2rem)); margin: 1.5rem auto 3rem; }
+.cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.card, .panel { background: var(--card); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 12px 30px rgba(15, 118, 110, .08); }
+.card { padding: 1.2rem; }
+.card span { color: var(--muted); display: block; margin-bottom: .5rem; }
+.card strong { font-size: 1.7rem; }
+.panel { padding: 1.3rem; margin-bottom: 1rem; }
+.panel-title, .toolbar { display: flex; justify-content: space-between; gap: 1rem; align-items: start; margin-bottom: 1rem; }
+.panel p, .toolbar p { color: var(--muted); margin-bottom: 0; }
+.form-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1rem; align-items: end; }
+label { display: grid; gap: .4rem; color: var(--muted); font-weight: 600; }
+input, select { width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: .8rem .9rem; font: inherit; color: var(--text); background: white; }
+input:focus { outline: 3px solid rgba(20, 184, 166, .22); border-color: var(--primary); }
+.form-actions { display: flex; gap: .6rem; grid-column: span 2; }
+button { border: 0; border-radius: 12px; padding: .85rem 1.1rem; background: var(--primary); color: white; font-weight: 700; cursor: pointer; white-space: nowrap; }
+button:hover { background: var(--primary-dark); }
+.secondary { background: white; color: var(--primary); border: 1px solid rgba(255,255,255,.65); }
+.panel .secondary { border-color: var(--border); }
+.filters { display: flex; gap: .7rem; align-items: center; min-width: min(100%, 28rem); }
+.filters select { max-width: 12rem; }
+.table-wrap { overflow-x: auto; }
+.table-wrap.compact { margin-bottom: .4rem; }
+table { width: 100%; border-collapse: collapse; min-width: 860px; }
+th, td { padding: .9rem; border-bottom: 1px solid var(--border); text-align: left; }
+th { color: var(--muted); font-size: .9rem; }
+.actions { display: flex; gap: .5rem; }
+.actions button { padding: .5rem .7rem; }
+.actions .delete { background: var(--danger); }
+.empty { text-align: center; padding: 2rem; }
+@media (max-width: 900px) { .cards, .form-grid { grid-template-columns: repeat(2, 1fr); } .form-actions { grid-column: span 2; } .hero, .panel-title, .toolbar { flex-direction: column; } .filters { width: 100%; } }
+@media (max-width: 560px) { .cards, .form-grid { grid-template-columns: 1fr; } .form-actions, .filters { grid-column: span 1; flex-direction: column; } .filters select { max-width: none; } }
+
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Travel Sales Dashboard</p>
+      <h1>旅游员工每日业绩统计</h1>
+      <p class="subtitle">记录每位员工每天的咨询量、加粉量、成交单数、成交率和成交金额，并自动汇总团队表现。</p>
+    </div>
+    <button id="exportBtn" class="secondary">导出 CSV</button>
+  </header>
+
+  <main>
+    <section class="cards" aria-label="团队数据总览">
+      <article class="card"><span>总咨询量</span><strong id="totalConsultations">0</strong></article>
+      <article class="card"><span>总加粉量</span><strong id="totalFollowers">0</strong></article>
+      <article class="card"><span>总成交单数</span><strong id="totalDeals">0</strong></article>
+      <article class="card"><span>平均成交率</span><strong id="avgRate">0%</strong></article>
+      <article class="card"><span>总成交金额</span><strong id="totalAmount">¥0</strong></article>
+      <article class="card"><span>总消费</span><strong id="totalSpend">¥0</strong></article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">
+        <h2>新增 / 编辑每日记录</h2>
+        <p>成交率会按“成交单数 ÷ 咨询量”自动计算。</p>
+      </div>
+      <form id="recordForm" class="form-grid">
+        <input type="hidden" id="recordId">
+        <label>日期<input id="date" type="date" required></label>
+        <label>员工姓名<input id="employee" type="text" placeholder="例如：小王" required></label>
+        <label>咨询量<input id="consultations" type="number" min="0" step="1" value="0" required></label>
+        <label>加粉量<input id="followers" type="number" min="0" step="1" value="0" required></label>
+        <label>成交单数<input id="deals" type="number" min="0" step="1" value="0" required></label>
+        <label>成交金额<input id="amount" type="number" min="0" step="0.01" value="0" required></label>
+        <label>当天消费<input id="spend" type="number" min="0" step="0.01" value="0" required></label>
+        <div class="form-actions">
+          <button type="submit" id="saveBtn">保存记录</button>
+          <button type="button" id="resetBtn" class="secondary">清空表单</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="toolbar">
+        <div>
+          <h2>员工汇总</h2>
+          <p>这里会按每个员工单独汇总，不会和其他员工混在一起。</p>
+        </div>
+      </div>
+      <div class="table-wrap compact">
+        <table>
+          <thead>
+            <tr>
+              <th>员工</th>
+              <th>咨询量</th>
+              <th>加粉量</th>
+              <th>成交单数</th>
+              <th>成交率</th>
+              <th>成交金额</th>
+              <th>消费</th>
+            </tr>
+          </thead>
+          <tbody id="employeeSummaryBody"></tbody>
+        </table>
+        <p id="employeeEmptyState" class="empty">还没有员工汇总，请先新增记录。</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="toolbar">
+        <div>
+          <h2>数据明细</h2>
+          <p>先选择员工，再查看该员工每天的详细数据；也可按日期搜索。</p>
+        </div>
+        <div class="filters">
+          <select id="employeeFilter" aria-label="按员工筛选">
+            <option value="">全部员工</option>
+          </select>
+          <input id="search" type="search" placeholder="搜索员工或日期...">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>员工</th>
+              <th>咨询量</th>
+              <th>加粉量</th>
+              <th>成交单数</th>
+              <th>成交率</th>
+              <th>成交金额</th>
+              <th>消费</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="recordsBody"></tbody>
+        </table>
+        <p id="emptyState" class="empty">还没有记录，请先新增一条员工数据。</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+const STORAGE_KEY = 'travel-sales-records';
+const form = document.querySelector('#recordForm');
+const fields = ['recordId', 'date', 'employee', 'consultations', 'followers', 'deals', 'amount', 'spend'];
+const recordsBody = document.querySelector('#recordsBody');
+const employeeSummaryBody = document.querySelector('#employeeSummaryBody');
+const emptyState = document.querySelector('#emptyState');
+const employeeEmptyState = document.querySelector('#employeeEmptyState');
+const searchInput = document.querySelector('#search');
+const employeeFilter = document.querySelector('#employeeFilter');
+
+let records = loadRecords();
+
+document.querySelector('#date').valueAsDate = new Date();
+form.addEventListener('submit', saveRecord);
+document.querySelector('#resetBtn').addEventListener('click', resetForm);
+document.querySelector('#exportBtn').addEventListener('click', exportCsv);
+searchInput.addEventListener('input', render);
+employeeFilter.addEventListener('change', render);
+render();
+
+function loadRecords() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+}
+
+function persist() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+
+function saveRecord(event) {
+  event.preventDefault();
+  const record = {
+    id: document.querySelector('#recordId').value || createId(),
+    date: document.querySelector('#date').value,
+    employee: document.querySelector('#employee').value.trim(),
+    consultations: Number(document.querySelector('#consultations').value),
+    followers: Number(document.querySelector('#followers').value),
+    deals: Number(document.querySelector('#deals').value),
+    amount: Number(document.querySelector('#amount').value),
+    spend: Number(document.querySelector('#spend').value),
+  };
+
+  const existingIndex = records.findIndex((item) => item.id === record.id);
+  if (existingIndex >= 0) records[existingIndex] = record;
+  else records.unshift(record);
+
+  persist();
+  resetForm();
+  render();
+}
+
+function resetForm() {
+  form.reset();
+  document.querySelector('#recordId').value = '';
+  document.querySelector('#date').valueAsDate = new Date();
+  document.querySelector('#saveBtn').textContent = '保存记录';
+}
+
+function render() {
+  renderEmployeeOptions();
+  const keyword = searchInput.value.trim().toLowerCase();
+  const selectedEmployee = employeeFilter.value;
+  const filtered = records.filter((record) => {
+    const matchesKeyword = `${record.date} ${record.employee}`.toLowerCase().includes(keyword);
+    const matchesEmployee = !selectedEmployee || record.employee === selectedEmployee;
+    return matchesKeyword && matchesEmployee;
+  });
+  recordsBody.innerHTML = filtered.map(rowTemplate).join('');
+  emptyState.hidden = filtered.length > 0;
+  renderEmployeeSummary(records);
+  renderSummary(filtered);
+}
+
+function renderEmployeeOptions() {
+  const current = employeeFilter.value;
+  const employees = [...new Set(records.map((record) => record.employee).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-CN'));
+  employeeFilter.innerHTML = '<option value="">全部员工</option>' + employees.map((employee) => `<option value="${escapeHtml(employee)}">${escapeHtml(employee)}</option>`).join('');
+  if (employees.includes(current)) employeeFilter.value = current;
+}
+
+function renderEmployeeSummary(list) {
+  const grouped = list.reduce((result, record) => {
+    if (!result[record.employee]) result[record.employee] = { employee: record.employee, consultations: 0, followers: 0, deals: 0, amount: 0, spend: 0 };
+    result[record.employee].consultations += record.consultations;
+    result[record.employee].followers += record.followers;
+    result[record.employee].deals += record.deals;
+    result[record.employee].amount += record.amount;
+    result[record.employee].spend += Number(record.spend || 0);
+    return result;
+  }, {});
+  const rows = Object.values(grouped).sort((a, b) => b.amount - a.amount || b.deals - a.deals);
+  employeeSummaryBody.innerHTML = rows.map((employee) => `<tr>
+    <td>${escapeHtml(employee.employee)}</td>
+    <td>${employee.consultations}</td>
+    <td>${employee.followers}</td>
+    <td>${employee.deals}</td>
+    <td>${formatRate(employee)}</td>
+    <td>${formatCurrency(employee.amount)}</td>
+    <td>${formatCurrency(employee.spend)}</td>
+  </tr>`).join('');
+  employeeEmptyState.hidden = rows.length > 0;
+}
+
+function rowTemplate(record) {
+  return `<tr>
+    <td>${record.date}</td>
+    <td>${escapeHtml(record.employee)}</td>
+    <td>${record.consultations}</td>
+    <td>${record.followers}</td>
+    <td>${record.deals}</td>
+    <td>${formatRate(record)}</td>
+    <td>${formatCurrency(record.amount)}</td>
+    <td>${formatCurrency(record.spend || 0)}</td>
+    <td class="actions">
+      <button onclick="editRecord('${record.id}')">编辑</button>
+      <button class="delete" onclick="deleteRecord('${record.id}')">删除</button>
+    </td>
+  </tr>`;
+}
+
+function renderSummary(list) {
+  const totals = list.reduce((sum, record) => ({
+    consultations: sum.consultations + record.consultations,
+    followers: sum.followers + record.followers,
+    deals: sum.deals + record.deals,
+    amount: sum.amount + record.amount,
+    spend: sum.spend + Number(record.spend || 0),
+  }), { consultations: 0, followers: 0, deals: 0, amount: 0, spend: 0 });
+
+  document.querySelector('#totalConsultations').textContent = totals.consultations;
+  document.querySelector('#totalFollowers').textContent = totals.followers;
+  document.querySelector('#totalDeals').textContent = totals.deals;
+  document.querySelector('#avgRate').textContent = totals.consultations ? `${((totals.deals / totals.consultations) * 100).toFixed(1)}%` : '0%';
+  document.querySelector('#totalAmount').textContent = formatCurrency(totals.amount);
+  document.querySelector('#totalSpend').textContent = formatCurrency(totals.spend);
+}
+
+function editRecord(id) {
+  const record = records.find((item) => item.id === id);
+  if (!record) return;
+  for (const field of fields) {
+    const value = field === 'recordId' ? record.id : (record[field] ?? 0);
+    document.querySelector(`#${field}`).value = value;
+  }
+  document.querySelector('#saveBtn').textContent = '更新记录';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteRecord(id) {
+  if (!confirm('确定删除这条记录吗？')) return;
+  records = records.filter((item) => item.id !== id);
+  persist();
+  render();
+}
+
+function exportCsv() {
+  const header = ['日期', '员工', '咨询量', '加粉量', '成交单数', '成交率', '成交金额', '消费'];
+  const rows = records.map((record) => [record.date, record.employee, record.consultations, record.followers, record.deals, formatRate(record), record.amount, record.spend || 0]);
+  const csv = [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\n');
+  const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `旅游员工数据-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function createId() {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+  return `record-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function csvCell(value) {
+  return `"${String(value).replaceAll('"', '""')}"`;
+}
+
+function formatRate(record) {
+  return record.consultations ? `${((record.deals / record.consultations) * 100).toFixed(1)}%` : '0%';
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(value);
+}
+
+function escapeHtml(value) {
+  return value.replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+}
+
+  </script>
+</body>
+</html>
