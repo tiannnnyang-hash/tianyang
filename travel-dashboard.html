@@ -26,7 +26,7 @@ h1, h2, p { margin-top: 0; }
 h1 { margin-bottom: .5rem; font-size: clamp(1.8rem, 4vw, 3rem); }
 .subtitle { max-width: 48rem; margin-bottom: 0; opacity: .9; }
 main { width: min(1180px, calc(100% - 2rem)); margin: 1.5rem auto 3rem; }
-.cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
 .card, .panel { background: var(--card); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 12px 30px rgba(15, 118, 110, .08); }
 .card { padding: 1.2rem; }
 .card span { color: var(--muted); display: block; margin-bottom: .5rem; }
@@ -76,6 +76,7 @@ th { color: var(--muted); font-size: .9rem; }
       <article class="card"><span>总成交单数</span><strong id="totalDeals">0</strong></article>
       <article class="card"><span>平均成交率</span><strong id="avgRate">0%</strong></article>
       <article class="card"><span>总成交金额</span><strong id="totalAmount">¥0</strong></article>
+      <article class="card"><span>总消费</span><strong id="totalSpend">¥0</strong></article>
     </section>
 
     <section class="panel">
@@ -91,6 +92,7 @@ th { color: var(--muted); font-size: .9rem; }
         <label>加粉量<input id="followers" type="number" min="0" step="1" value="0" required></label>
         <label>成交单数<input id="deals" type="number" min="0" step="1" value="0" required></label>
         <label>成交金额<input id="amount" type="number" min="0" step="0.01" value="0" required></label>
+        <label>当天消费<input id="spend" type="number" min="0" step="0.01" value="0" required></label>
         <div class="form-actions">
           <button type="submit" id="saveBtn">保存记录</button>
           <button type="button" id="resetBtn" class="secondary">清空表单</button>
@@ -102,7 +104,7 @@ th { color: var(--muted); font-size: .9rem; }
       <div class="toolbar">
         <div>
           <h2>员工汇总</h2>
-          <p>按员工自动汇总咨询量、加粉量、成交单数、成交率和成交金额。</p>
+          <p>这里会按每个员工单独汇总，不会和其他员工混在一起。</p>
         </div>
       </div>
       <div class="table-wrap compact">
@@ -115,6 +117,7 @@ th { color: var(--muted); font-size: .9rem; }
               <th>成交单数</th>
               <th>成交率</th>
               <th>成交金额</th>
+              <th>消费</th>
             </tr>
           </thead>
           <tbody id="employeeSummaryBody"></tbody>
@@ -147,6 +150,7 @@ th { color: var(--muted); font-size: .9rem; }
               <th>成交单数</th>
               <th>成交率</th>
               <th>成交金额</th>
+              <th>消费</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -160,7 +164,7 @@ th { color: var(--muted); font-size: .9rem; }
   <script>
 const STORAGE_KEY = 'travel-sales-records';
 const form = document.querySelector('#recordForm');
-const fields = ['recordId', 'date', 'employee', 'consultations', 'followers', 'deals', 'amount'];
+const fields = ['recordId', 'date', 'employee', 'consultations', 'followers', 'deals', 'amount', 'spend'];
 const recordsBody = document.querySelector('#recordsBody');
 const employeeSummaryBody = document.querySelector('#employeeSummaryBody');
 const emptyState = document.querySelector('#emptyState');
@@ -196,6 +200,7 @@ function saveRecord(event) {
     followers: Number(document.querySelector('#followers').value),
     deals: Number(document.querySelector('#deals').value),
     amount: Number(document.querySelector('#amount').value),
+    spend: Number(document.querySelector('#spend').value),
   };
 
   const existingIndex = records.findIndex((item) => item.id === record.id);
@@ -238,11 +243,12 @@ function renderEmployeeOptions() {
 
 function renderEmployeeSummary(list) {
   const grouped = list.reduce((result, record) => {
-    if (!result[record.employee]) result[record.employee] = { employee: record.employee, consultations: 0, followers: 0, deals: 0, amount: 0 };
+    if (!result[record.employee]) result[record.employee] = { employee: record.employee, consultations: 0, followers: 0, deals: 0, amount: 0, spend: 0 };
     result[record.employee].consultations += record.consultations;
     result[record.employee].followers += record.followers;
     result[record.employee].deals += record.deals;
     result[record.employee].amount += record.amount;
+    result[record.employee].spend += Number(record.spend || 0);
     return result;
   }, {});
   const rows = Object.values(grouped).sort((a, b) => b.amount - a.amount || b.deals - a.deals);
@@ -253,6 +259,7 @@ function renderEmployeeSummary(list) {
     <td>${employee.deals}</td>
     <td>${formatRate(employee)}</td>
     <td>${formatCurrency(employee.amount)}</td>
+    <td>${formatCurrency(employee.spend)}</td>
   </tr>`).join('');
   employeeEmptyState.hidden = rows.length > 0;
 }
@@ -266,6 +273,7 @@ function rowTemplate(record) {
     <td>${record.deals}</td>
     <td>${formatRate(record)}</td>
     <td>${formatCurrency(record.amount)}</td>
+    <td>${formatCurrency(record.spend || 0)}</td>
     <td class="actions">
       <button onclick="editRecord('${record.id}')">编辑</button>
       <button class="delete" onclick="deleteRecord('${record.id}')">删除</button>
@@ -279,20 +287,22 @@ function renderSummary(list) {
     followers: sum.followers + record.followers,
     deals: sum.deals + record.deals,
     amount: sum.amount + record.amount,
-  }), { consultations: 0, followers: 0, deals: 0, amount: 0 });
+    spend: sum.spend + Number(record.spend || 0),
+  }), { consultations: 0, followers: 0, deals: 0, amount: 0, spend: 0 });
 
   document.querySelector('#totalConsultations').textContent = totals.consultations;
   document.querySelector('#totalFollowers').textContent = totals.followers;
   document.querySelector('#totalDeals').textContent = totals.deals;
   document.querySelector('#avgRate').textContent = totals.consultations ? `${((totals.deals / totals.consultations) * 100).toFixed(1)}%` : '0%';
   document.querySelector('#totalAmount').textContent = formatCurrency(totals.amount);
+  document.querySelector('#totalSpend').textContent = formatCurrency(totals.spend);
 }
 
 function editRecord(id) {
   const record = records.find((item) => item.id === id);
   if (!record) return;
   for (const field of fields) {
-    const value = field === 'recordId' ? record.id : record[field];
+    const value = field === 'recordId' ? record.id : (record[field] ?? 0);
     document.querySelector(`#${field}`).value = value;
   }
   document.querySelector('#saveBtn').textContent = '更新记录';
@@ -307,8 +317,8 @@ function deleteRecord(id) {
 }
 
 function exportCsv() {
-  const header = ['日期', '员工', '咨询量', '加粉量', '成交单数', '成交率', '成交金额'];
-  const rows = records.map((record) => [record.date, record.employee, record.consultations, record.followers, record.deals, formatRate(record), record.amount]);
+  const header = ['日期', '员工', '咨询量', '加粉量', '成交单数', '成交率', '成交金额', '消费'];
+  const rows = records.map((record) => [record.date, record.employee, record.consultations, record.followers, record.deals, formatRate(record), record.amount, record.spend || 0]);
   const csv = [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\n');
   const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');

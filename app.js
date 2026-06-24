@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'travel-sales-records';
 const form = document.querySelector('#recordForm');
-const fields = ['recordId', 'date', 'employee', 'consultations', 'followers', 'deals', 'amount'];
+const fields = ['recordId', 'date', 'employee', 'consultations', 'followers', 'deals', 'amount', 'spend'];
 const recordsBody = document.querySelector('#recordsBody');
 const employeeSummaryBody = document.querySelector('#employeeSummaryBody');
 const emptyState = document.querySelector('#emptyState');
@@ -36,6 +36,7 @@ function saveRecord(event) {
     followers: Number(document.querySelector('#followers').value),
     deals: Number(document.querySelector('#deals').value),
     amount: Number(document.querySelector('#amount').value),
+    spend: Number(document.querySelector('#spend').value),
   };
 
   const existingIndex = records.findIndex((item) => item.id === record.id);
@@ -78,11 +79,12 @@ function renderEmployeeOptions() {
 
 function renderEmployeeSummary(list) {
   const grouped = list.reduce((result, record) => {
-    if (!result[record.employee]) result[record.employee] = { employee: record.employee, consultations: 0, followers: 0, deals: 0, amount: 0 };
+    if (!result[record.employee]) result[record.employee] = { employee: record.employee, consultations: 0, followers: 0, deals: 0, amount: 0, spend: 0 };
     result[record.employee].consultations += record.consultations;
     result[record.employee].followers += record.followers;
     result[record.employee].deals += record.deals;
     result[record.employee].amount += record.amount;
+    result[record.employee].spend += Number(record.spend || 0);
     return result;
   }, {});
   const rows = Object.values(grouped).sort((a, b) => b.amount - a.amount || b.deals - a.deals);
@@ -93,6 +95,7 @@ function renderEmployeeSummary(list) {
     <td>${employee.deals}</td>
     <td>${formatRate(employee)}</td>
     <td>${formatCurrency(employee.amount)}</td>
+    <td>${formatCurrency(employee.spend)}</td>
   </tr>`).join('');
   employeeEmptyState.hidden = rows.length > 0;
 }
@@ -106,6 +109,7 @@ function rowTemplate(record) {
     <td>${record.deals}</td>
     <td>${formatRate(record)}</td>
     <td>${formatCurrency(record.amount)}</td>
+    <td>${formatCurrency(record.spend || 0)}</td>
     <td class="actions">
       <button onclick="editRecord('${record.id}')">编辑</button>
       <button class="delete" onclick="deleteRecord('${record.id}')">删除</button>
@@ -119,20 +123,22 @@ function renderSummary(list) {
     followers: sum.followers + record.followers,
     deals: sum.deals + record.deals,
     amount: sum.amount + record.amount,
-  }), { consultations: 0, followers: 0, deals: 0, amount: 0 });
+    spend: sum.spend + Number(record.spend || 0),
+  }), { consultations: 0, followers: 0, deals: 0, amount: 0, spend: 0 });
 
   document.querySelector('#totalConsultations').textContent = totals.consultations;
   document.querySelector('#totalFollowers').textContent = totals.followers;
   document.querySelector('#totalDeals').textContent = totals.deals;
   document.querySelector('#avgRate').textContent = totals.consultations ? `${((totals.deals / totals.consultations) * 100).toFixed(1)}%` : '0%';
   document.querySelector('#totalAmount').textContent = formatCurrency(totals.amount);
+  document.querySelector('#totalSpend').textContent = formatCurrency(totals.spend);
 }
 
 function editRecord(id) {
   const record = records.find((item) => item.id === id);
   if (!record) return;
   for (const field of fields) {
-    const value = field === 'recordId' ? record.id : record[field];
+    const value = field === 'recordId' ? record.id : (record[field] ?? 0);
     document.querySelector(`#${field}`).value = value;
   }
   document.querySelector('#saveBtn').textContent = '更新记录';
@@ -147,8 +153,8 @@ function deleteRecord(id) {
 }
 
 function exportCsv() {
-  const header = ['日期', '员工', '咨询量', '加粉量', '成交单数', '成交率', '成交金额'];
-  const rows = records.map((record) => [record.date, record.employee, record.consultations, record.followers, record.deals, formatRate(record), record.amount]);
+  const header = ['日期', '员工', '咨询量', '加粉量', '成交单数', '成交率', '成交金额', '消费'];
+  const rows = records.map((record) => [record.date, record.employee, record.consultations, record.followers, record.deals, formatRate(record), record.amount, record.spend || 0]);
   const csv = [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\n');
   const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');

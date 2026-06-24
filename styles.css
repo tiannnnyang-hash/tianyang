@@ -19,7 +19,7 @@ h1, h2, p { margin-top: 0; }
 h1 { margin-bottom: .5rem; font-size: clamp(1.8rem, 4vw, 3rem); }
 .subtitle { max-width: 48rem; margin-bottom: 0; opacity: .9; }
 main { width: min(1180px, calc(100% - 2rem)); margin: 1.5rem auto 3rem; }
-.cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
 .card, .panel { background: var(--card); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 12px 30px rgba(15, 118, 110, .08); }
 .card { padding: 1.2rem; }
 .card span { color: var(--muted); display: block; margin-bottom: .5rem; }
