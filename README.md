@@ -53,3 +53,28 @@ python3 -m http.server 4173
 ```
 
 然后访问 <http://localhost:4173/index.html>。
+
+## Windows 桌面 App 版本
+
+如果你想把它做成 Windows 电脑端 App，可以使用项目里的 Electron 配置打包：
+
+1. 先安装 Node.js。
+2. 在项目目录打开命令行，执行：
+
+```bash
+npm install
+```
+
+3. 本地试运行桌面 App：
+
+```bash
+npm start
+```
+
+4. 打包 Windows 安装包和便携版：
+
+```bash
+npm run package:win
+```
+
+打包完成后，安装包会出现在 `dist` 目录里。安装后可以像普通 Windows 软件一样从桌面图标或开始菜单打开。
