@@ -56,9 +56,19 @@ python3 -m http.server 4173
 
 ## Windows 桌面 App 版本
 
-如果你想把它做成 Windows 电脑端 App，可以使用项目里的 Electron 配置打包。
+### 最推荐：免安装打开
 
-### 推荐：直接双击脚本
+如果你只是想在 Windows 电脑上像 App 一样使用，不需要安装 Node.js，也不需要执行 `npm install`：
+
+1. 双击 `open-windows-app.cmd`。
+2. 软件会用 Edge 或 Chrome 的 App 窗口打开。
+3. 数据仍然保存在你这台电脑的浏览器本地数据里。
+
+这个方式最简单，也不会出现 PowerShell 禁止脚本、`npm install` 闪退、Electron 下载失败等问题。
+
+### 真正打包成安装包
+
+如果你一定要生成 Windows 安装包，再使用 Electron 打包流程。
 
 PowerShell 可能会因为系统策略禁止直接执行 `npm.ps1`。为了避免这个问题，Windows 上优先使用下面这些 `.cmd` 文件：
 
@@ -69,9 +79,17 @@ PowerShell 可能会因为系统策略禁止直接执行 `npm.ps1`。为了避�
 
 打包完成后，安装包会出现在 `dist` 目录里。安装后可以像普通 Windows 软件一样从桌面图标或开始菜单打开。
 
-### 如果你想继续用 PowerShell
+### 如果脚本窗口一闪而过
 
-如果 PowerShell 提示“禁止运行脚本”，可以改用下面的命令，注意是 `npm.cmd`：
+请优先双击 `open-windows-app.cmd` 使用免安装版本。
+
+如果你要排查打包问题，可以在项目文件夹空白处按住 `Shift` + 鼠标右键，选择“在终端中打开”，然后执行：
+
+```powershell
+npm.cmd install
+```
+
+如果 PowerShell 提示“禁止运行脚本”，也要使用 `npm.cmd`，不要直接使用 `npm`：
 
 ```powershell
 npm.cmd install
