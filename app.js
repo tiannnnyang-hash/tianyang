@@ -2,8 +2,11 @@ const STORAGE_KEY = 'travel-sales-records';
 const form = document.querySelector('#recordForm');
 const fields = ['recordId', 'date', 'employee', 'consultations', 'followers', 'deals', 'amount'];
 const recordsBody = document.querySelector('#recordsBody');
+const employeeSummaryBody = document.querySelector('#employeeSummaryBody');
 const emptyState = document.querySelector('#emptyState');
+const employeeEmptyState = document.querySelector('#employeeEmptyState');
 const searchInput = document.querySelector('#search');
+const employeeFilter = document.querySelector('#employeeFilter');
 
 let records = loadRecords();
 
@@ -12,6 +15,7 @@ form.addEventListener('submit', saveRecord);
 document.querySelector('#resetBtn').addEventListener('click', resetForm);
 document.querySelector('#exportBtn').addEventListener('click', exportCsv);
 searchInput.addEventListener('input', render);
+employeeFilter.addEventListener('change', render);
 render();
 
 function loadRecords() {
@@ -51,11 +55,46 @@ function resetForm() {
 }
 
 function render() {
+  renderEmployeeOptions();
   const keyword = searchInput.value.trim().toLowerCase();
-  const filtered = records.filter((record) => `${record.date} ${record.employee}`.toLowerCase().includes(keyword));
+  const selectedEmployee = employeeFilter.value;
+  const filtered = records.filter((record) => {
+    const matchesKeyword = `${record.date} ${record.employee}`.toLowerCase().includes(keyword);
+    const matchesEmployee = !selectedEmployee || record.employee === selectedEmployee;
+    return matchesKeyword && matchesEmployee;
+  });
   recordsBody.innerHTML = filtered.map(rowTemplate).join('');
   emptyState.hidden = filtered.length > 0;
+  renderEmployeeSummary(records);
   renderSummary(filtered);
+}
+
+function renderEmployeeOptions() {
+  const current = employeeFilter.value;
+  const employees = [...new Set(records.map((record) => record.employee).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-CN'));
+  employeeFilter.innerHTML = '<option value="">全部员工</option>' + employees.map((employee) => `<option value="${escapeHtml(employee)}">${escapeHtml(employee)}</option>`).join('');
+  if (employees.includes(current)) employeeFilter.value = current;
+}
+
+function renderEmployeeSummary(list) {
+  const grouped = list.reduce((result, record) => {
+    if (!result[record.employee]) result[record.employee] = { employee: record.employee, consultations: 0, followers: 0, deals: 0, amount: 0 };
+    result[record.employee].consultations += record.consultations;
+    result[record.employee].followers += record.followers;
+    result[record.employee].deals += record.deals;
+    result[record.employee].amount += record.amount;
+    return result;
+  }, {});
+  const rows = Object.values(grouped).sort((a, b) => b.amount - a.amount || b.deals - a.deals);
+  employeeSummaryBody.innerHTML = rows.map((employee) => `<tr>
+    <td>${escapeHtml(employee.employee)}</td>
+    <td>${employee.consultations}</td>
+    <td>${employee.followers}</td>
+    <td>${employee.deals}</td>
+    <td>${formatRate(employee)}</td>
+    <td>${formatCurrency(employee.amount)}</td>
+  </tr>`).join('');
+  employeeEmptyState.hidden = rows.length > 0;
 }
 
 function rowTemplate(record) {

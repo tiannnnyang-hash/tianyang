@@ -29,14 +29,17 @@ main { width: min(1180px, calc(100% - 2rem)); margin: 1.5rem auto 3rem; }
 .panel p, .toolbar p { color: var(--muted); margin-bottom: 0; }
 .form-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1rem; align-items: end; }
 label { display: grid; gap: .4rem; color: var(--muted); font-weight: 600; }
-input { width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: .8rem .9rem; font: inherit; color: var(--text); background: white; }
+input, select { width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: .8rem .9rem; font: inherit; color: var(--text); background: white; }
 input:focus { outline: 3px solid rgba(20, 184, 166, .22); border-color: var(--primary); }
 .form-actions { display: flex; gap: .6rem; grid-column: span 2; }
 button { border: 0; border-radius: 12px; padding: .85rem 1.1rem; background: var(--primary); color: white; font-weight: 700; cursor: pointer; white-space: nowrap; }
 button:hover { background: var(--primary-dark); }
 .secondary { background: white; color: var(--primary); border: 1px solid rgba(255,255,255,.65); }
 .panel .secondary { border-color: var(--border); }
+.filters { display: flex; gap: .7rem; align-items: center; min-width: min(100%, 28rem); }
+.filters select { max-width: 12rem; }
 .table-wrap { overflow-x: auto; }
+.table-wrap.compact { margin-bottom: .4rem; }
 table { width: 100%; border-collapse: collapse; min-width: 860px; }
 th, td { padding: .9rem; border-bottom: 1px solid var(--border); text-align: left; }
 th { color: var(--muted); font-size: .9rem; }
@@ -44,5 +47,5 @@ th { color: var(--muted); font-size: .9rem; }
 .actions button { padding: .5rem .7rem; }
 .actions .delete { background: var(--danger); }
 .empty { text-align: center; padding: 2rem; }
-@media (max-width: 900px) { .cards, .form-grid { grid-template-columns: repeat(2, 1fr); } .form-actions { grid-column: span 2; } .hero, .panel-title, .toolbar { flex-direction: column; } }
-@media (max-width: 560px) { .cards, .form-grid { grid-template-columns: 1fr; } .form-actions { grid-column: span 1; flex-direction: column; } }
+@media (max-width: 900px) { .cards, .form-grid { grid-template-columns: repeat(2, 1fr); } .form-actions { grid-column: span 2; } .hero, .panel-title, .toolbar { flex-direction: column; } .filters { width: 100%; } }
+@media (max-width: 560px) { .cards, .form-grid { grid-template-columns: 1fr; } .form-actions, .filters { grid-column: span 1; flex-direction: column; } .filters select { max-width: none; } }
