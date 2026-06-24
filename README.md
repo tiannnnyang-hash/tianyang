@@ -56,25 +56,33 @@ python3 -m http.server 4173
 
 ## Windows 桌面 App 版本
 
-如果你想把它做成 Windows 电脑端 App，可以使用项目里的 Electron 配置打包：
+如果你想把它做成 Windows 电脑端 App，可以使用项目里的 Electron 配置打包。
+
+### 推荐：直接双击脚本
+
+PowerShell 可能会因为系统策略禁止直接执行 `npm.ps1`。为了避免这个问题，Windows 上优先使用下面这些 `.cmd` 文件：
 
 1. 先安装 Node.js。
-2. 在项目目录打开命令行，执行：
-
-```bash
-npm install
-```
-
-3. 本地试运行桌面 App：
-
-```bash
-npm start
-```
-
-4. 打包 Windows 安装包和便携版：
-
-```bash
-npm run package:win
-```
+2. 双击 `install-windows.cmd` 安装依赖。
+3. 双击 `run-windows-app.cmd` 试运行桌面 App。
+4. 双击 `build-windows-app.cmd` 打包 Windows 安装包和便携版。
 
 打包完成后，安装包会出现在 `dist` 目录里。安装后可以像普通 Windows 软件一样从桌面图标或开始菜单打开。
+
+### 如果你想继续用 PowerShell
+
+如果 PowerShell 提示“禁止运行脚本”，可以改用下面的命令，注意是 `npm.cmd`：
+
+```powershell
+npm.cmd install
+npm.cmd start
+npm.cmd run package:win
+```
+
+也可以用 Windows 自带的“命令提示符 CMD”打开项目目录，再执行：
+
+```cmd
+npm install
+npm start
+npm run package:win
+```
