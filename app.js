@@ -1,341 +1,176 @@
-const STORAGE_KEY = 'travel-dashboard-v3';
-const legacyKey = 'travel-sales-records';
-const state = loadState();
+const STORAGE_KEY = 'travel-simple-dashboard-v1';
+const OLD_KEYS = ['travel-dashboard-v3', 'travel-sales-records'];
+const form = document.querySelector('#recordForm');
+const fields = ['recordId', 'date', 'employee', 'adAccount', 'consultations', 'followers', 'deals', 'amount', 'adSpend', 'note'];
+let records = loadRecords();
 
-const $ = (id) => document.querySelector(`#${id}`);
-const accountForm = $('accountForm');
-const recordForm = $('recordForm');
-const accountFields = ['accountId', 'accountName', 'platform', 'accountSpend', 'accountFans', 'accountLeads'];
-const recordFields = ['recordId', 'date', 'recordAccount', 'salesperson', 'handledFans', 'handledLeads', 'orders', 'collected', 'note'];
-
-$('date').valueAsDate = new Date();
-accountForm.addEventListener('submit', saveAccount);
-recordForm.addEventListener('submit', saveRecord);
-$('recordAccount').addEventListener('change', fillAccountFields);
-['handledLeads', 'orders', 'collected'].forEach((id) => $(id).addEventListener('input', updateLiveCalc));
-$('resetBtn').addEventListener('click', resetRecordForm);
-$('queryBtn').addEventListener('click', render);
-$('resetFilterBtn').addEventListener('click', resetFilters);
-$('exportBtn').addEventListener('click', exportCsv);
-$('clearAllBtn').addEventListener('click', clearAllData);
-$('accountFilter').addEventListener('change', render);
-$('salesFilter').addEventListener('change', render);
-$('textFilter').addEventListener('input', render);
-$('startDate').addEventListener('change', render);
-$('endDate').addEventListener('change', render);
-
+document.querySelector('#date').valueAsDate = new Date();
+form.addEventListener('submit', saveRecord);
+document.querySelector('#resetBtn').addEventListener('click', resetForm);
+document.querySelector('#exportBtn').addEventListener('click', exportCsv);
+document.querySelector('#clearAllBtn').addEventListener('click', clearAllData);
+document.querySelector('#queryBtn').addEventListener('click', render);
+document.querySelector('#resetFilterBtn').addEventListener('click', resetFilters);
+['employeeFilter', 'startDate', 'endDate', 'search'].forEach((id) => document.querySelector(`#${id}`).addEventListener('input', render));
 render();
 
-function loadState() {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) return JSON.parse(stored);
-  const legacyRecords = JSON.parse(localStorage.getItem(legacyKey) || '[]');
-  if (!legacyRecords.length) return { accounts: [], records: [] };
-  return {
-    accounts: [],
-    records: legacyRecords.map((item) => ({
-      id: item.id || createId(),
-      date: item.date,
-      accountId: '',
-      accountName: '旧数据',
-      platform: '其他',
-      accountSpend: Number(item.spend || 0),
-      accountFans: Number(item.followers || 0),
-      accountLeads: Number(item.consultations || 0),
-      unitPrice: Number(item.consultations || 0) ? Number(item.spend || 0) / Number(item.consultations || 0) : 0,
-      salesperson: item.employee || '未命名',
-      handledFans: Number(item.followers || 0),
-      handledLeads: Number(item.consultations || 0),
-      salesSpend: Number(item.spend || 0),
-      orders: Number(item.deals || 0),
-      collected: Number(item.amount || 0),
-      profit: Number(item.amount || 0) - Number(item.spend || 0),
-      note: '由旧版本数据迁移',
-    })),
-  };
+function loadRecords() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) return JSON.parse(saved);
+  const oldV3 = JSON.parse(localStorage.getItem(OLD_KEYS[0]) || 'null');
+  if (oldV3?.records?.length) return oldV3.records.map((item) => ({
+    id: item.id || createId(), date: item.date, employee: item.salesperson || '未命名', adAccount: item.accountName || '未命名账户',
+    consultations: Number(item.accountLeads || item.handledLeads || 0), followers: Number(item.handledFans || 0), deals: Number(item.orders || 0),
+    amount: Number(item.collected || 0), adSpend: Number(item.salesSpend || item.accountSpend || 0), note: item.note || '',
+  }));
+  const legacy = JSON.parse(localStorage.getItem(OLD_KEYS[1]) || '[]');
+  return legacy.map((item) => ({
+    id: item.id || createId(), date: item.date, employee: item.employee || '未命名', adAccount: item.adAccount || '未命名账户',
+    consultations: Number(item.consultations || 0), followers: Number(item.followers || 0), deals: Number(item.deals || 0),
+    amount: Number(item.amount || 0), adSpend: Number(item.adSpend || item.spend || 0), note: item.note || '',
+  }));
 }
 
-function persist() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-function saveAccount(event) {
-  event.preventDefault();
-  const account = {
-    id: $('accountId').value || createId(),
-    name: $('accountName').value.trim(),
-    platform: $('platform').value,
-    spend: Number($('accountSpend').value),
-    fans: Number($('accountFans').value),
-    leads: Number($('accountLeads').value),
-  };
-  const index = state.accounts.findIndex((item) => item.id === account.id);
-  if (index >= 0) state.accounts[index] = account;
-  else state.accounts.push(account);
-  persist();
-  accountForm.reset();
-  $('accountId').value = '';
-  render();
-}
+function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
 
 function saveRecord(event) {
   event.preventDefault();
-  const account = selectedAccount();
-  if (!account) return alert('请先选择账户');
-  const computed = computeRecordValues(account);
   const record = {
-    id: $('recordId').value || createId(),
-    date: $('date').value,
-    accountId: account.id,
-    accountName: account.name,
-    platform: account.platform,
-    accountSpend: account.spend,
-    accountFans: account.fans,
-    accountLeads: account.leads,
-    unitPrice: computed.unitPrice,
-    salesperson: $('salesperson').value.trim(),
-    handledFans: Number($('handledFans').value),
-    handledLeads: Number($('handledLeads').value),
-    salesSpend: computed.salesSpend,
-    orders: Number($('orders').value),
-    collected: Number($('collected').value),
-    profit: computed.profit,
-    note: $('note').value.trim(),
+    id: document.querySelector('#recordId').value || createId(),
+    date: document.querySelector('#date').value,
+    employee: document.querySelector('#employee').value.trim(),
+    adAccount: document.querySelector('#adAccount').value.trim(),
+    consultations: Number(document.querySelector('#consultations').value),
+    followers: Number(document.querySelector('#followers').value),
+    deals: Number(document.querySelector('#deals').value),
+    amount: Number(document.querySelector('#amount').value),
+    adSpend: Number(document.querySelector('#adSpend').value),
+    note: document.querySelector('#note').value.trim(),
   };
-  const index = state.records.findIndex((item) => item.id === record.id);
-  if (index >= 0) state.records[index] = record;
-  else state.records.unshift(record);
-  persist();
-  resetRecordForm();
-  render();
+  const index = records.findIndex((item) => item.id === record.id);
+  if (index >= 0) records[index] = record;
+  else records.unshift(record);
+  persist(); resetForm(); render();
 }
 
-function selectedAccount() {
-  return state.accounts.find((item) => item.id === $('recordAccount').value);
-}
-
-function computeRecordValues(account) {
-  const unitPrice = account.leads ? account.spend / account.leads : 0;
-  const salesSpend = unitPrice * Number($('handledLeads').value || 0);
-  const profit = Number($('collected').value || 0) - salesSpend;
-  return { unitPrice, salesSpend, profit };
-}
-
-function fillAccountFields() {
-  const account = selectedAccount();
-  $('recordAccountSpend').value = account ? account.spend : '';
-  $('recordAccountLeads').value = account ? account.leads : '';
-  $('recordAccountFans').value = account ? account.fans : '';
-  $('unitPrice').value = account && account.leads ? (account.spend / account.leads).toFixed(2) : '';
-  updateLiveCalc();
-}
-
-function updateLiveCalc() {
-  const account = selectedAccount();
-  if (!account) {
-    $('salesSpend').value = '';
-    $('profit').value = '';
-    $('liveCalc').textContent = '📈 客单价：-- 元/留资　💵 该销售消费：-- 元　💵 利润：-- 元　📊 成单率：--';
-    return;
-  }
-  const computed = computeRecordValues(account);
-  $('salesSpend').value = computed.salesSpend.toFixed(2);
-  $('profit').value = computed.profit.toFixed(2);
-  const rate = Number($('handledLeads').value || 0) ? Number($('orders').value || 0) / Number($('handledLeads').value || 0) : 0;
-  $('liveCalc').textContent = `📈 客单价：${computed.unitPrice.toFixed(2)} 元/留资　💵 该销售消费：${computed.salesSpend.toFixed(2)} 元　💵 利润：${computed.profit.toFixed(2)} 元　📊 成单率：${formatPercent(rate)}`;
-}
-
-function resetRecordForm() {
-  recordForm.reset();
-  $('recordId').value = '';
-  $('date').valueAsDate = new Date();
-  $('saveBtn').textContent = '➕ 添加销售记录';
-  fillAccountFields();
+function resetForm() {
+  form.reset();
+  document.querySelector('#recordId').value = '';
+  document.querySelector('#date').valueAsDate = new Date();
+  document.querySelector('#saveBtn').textContent = '保存记录';
 }
 
 function resetFilters() {
-  $('salesFilter').value = '';
-  $('accountFilter').value = '';
-  $('textFilter').value = '';
-  $('startDate').value = '';
-  $('endDate').value = '';
+  document.querySelector('#employeeFilter').value = '';
+  document.querySelector('#startDate').value = '';
+  document.querySelector('#endDate').value = '';
+  document.querySelector('#search').value = '';
   render();
 }
 
 function filteredRecords() {
-  const sales = $('salesFilter').value;
-  const account = $('accountFilter').value;
-  const text = $('textFilter').value.trim().toLowerCase();
-  const start = $('startDate').value;
-  const end = $('endDate').value;
-  return state.records.filter((record) => {
-    const matchSales = !sales || record.salesperson === sales;
-    const matchAccount = !account || record.accountId === account;
-    const matchText = !text || `${record.salesperson} ${record.accountName} ${record.platform} ${record.note}`.toLowerCase().includes(text);
+  const employee = document.querySelector('#employeeFilter').value;
+  const start = document.querySelector('#startDate').value;
+  const end = document.querySelector('#endDate').value;
+  const keyword = document.querySelector('#search').value.trim().toLowerCase();
+  return records.filter((record) => {
+    const matchEmployee = !employee || record.employee === employee;
     const matchStart = !start || record.date >= start;
     const matchEnd = !end || record.date <= end;
-    return matchSales && matchAccount && matchText && matchStart && matchEnd;
+    const matchKeyword = !keyword || `${record.employee} ${record.adAccount} ${record.note}`.toLowerCase().includes(keyword);
+    return matchEmployee && matchStart && matchEnd && matchKeyword;
   });
 }
 
 function render() {
-  renderOptions();
+  renderEmployeeOptions();
   const list = filteredRecords();
-  renderAccountChips();
-  renderMetrics(list);
-  renderSalesSummary(list);
-  renderRecords(list);
+  renderTotals(list);
+  renderGrouped('employeeSummaryBody', groupBy(list, 'employee'), true);
+  renderGrouped('accountSummaryBody', groupBy(list, 'adAccount'), false);
   renderSchedule(list);
-  $('resultCount').textContent = `共 ${list.length} 条`;
-  $('accountCount').textContent = `共 ${state.accounts.length} 个账户`;
+  renderRows(list);
+  document.querySelector('#resultCount').textContent = `共 ${list.length} 条`;
 }
 
-function renderOptions() {
-  const accountOptions = '<option value="">全部</option>' + state.accounts.map((account) => `<option value="${account.id}">${escapeHtml(account.name)}</option>`).join('');
-  const recordAccountOptions = '<option value="">-- 请选择 --</option>' + state.accounts.map((account) => `<option value="${account.id}">${escapeHtml(account.name)}</option>`).join('');
-  const salespeople = [...new Set(state.records.map((record) => record.salesperson).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-CN'));
-  const currentSales = $('salesFilter').value;
-  const currentAccount = $('accountFilter').value;
-  const currentRecordAccount = $('recordAccount').value;
-  $('accountFilter').innerHTML = accountOptions;
-  $('recordAccount').innerHTML = recordAccountOptions;
-  $('salesFilter').innerHTML = '<option value="">全部</option>' + salespeople.map((person) => `<option value="${escapeHtml(person)}">${escapeHtml(person)}</option>`).join('');
-  if (salespeople.includes(currentSales)) $('salesFilter').value = currentSales;
-  if (state.accounts.some((account) => account.id === currentAccount)) $('accountFilter').value = currentAccount;
-  if (state.accounts.some((account) => account.id === currentRecordAccount)) $('recordAccount').value = currentRecordAccount;
+function renderEmployeeOptions() {
+  const current = document.querySelector('#employeeFilter').value;
+  const employees = [...new Set(records.map((record) => record.employee).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-CN'));
+  document.querySelector('#employeeFilter').innerHTML = '<option value="">全部</option>' + employees.map((employee) => `<option value="${escapeHtml(employee)}">${escapeHtml(employee)}</option>`).join('');
+  if (employees.includes(current)) document.querySelector('#employeeFilter').value = current;
 }
 
-function renderAccountChips() {
-  $('accountChips').innerHTML = state.accounts.map((account) => `<span class="chip">${escapeHtml(account.name)}（消耗${formatNumber(account.spend)} 留资${account.leads}） <button type="button" onclick="editAccount('${account.id}')">✎</button><button type="button" onclick="deleteAccount('${account.id}')">×</button></span>`).join('') || '<span class="muted">暂无账户，请先添加账户</span>';
+function renderTotals(list) {
+  const total = list.reduce((sum, record) => addRecord(sum, record), emptyTotal());
+  document.querySelector('#totalConsultations').textContent = total.consultations;
+  document.querySelector('#totalFollowers').textContent = total.followers;
+  document.querySelector('#totalDeals').textContent = total.deals;
+  document.querySelector('#avgRate').textContent = formatRate(total);
+  document.querySelector('#totalAmount').textContent = formatCurrency(total.amount);
+  document.querySelector('#totalAdSpend').textContent = formatCurrency(total.adSpend);
+  document.querySelector('#totalProfit').textContent = formatCurrency(total.amount - total.adSpend);
 }
 
-function renderMetrics(list) {
-  const accountIds = new Set(list.map((record) => record.accountId).filter(Boolean));
-  const accounts = state.accounts.filter((account) => accountIds.size ? accountIds.has(account.id) : true);
-  const accountTotals = accounts.reduce((sum, account) => ({ spend: sum.spend + account.spend, fans: sum.fans + account.fans, leads: sum.leads + account.leads }), { spend: 0, fans: 0, leads: 0 });
-  const salesTotals = list.reduce((sum, record) => ({ spend: sum.spend + record.salesSpend, orders: sum.orders + record.orders, leads: sum.leads + record.handledLeads }), { spend: 0, orders: 0, leads: 0 });
-  $('accountSpendTotal').textContent = formatNumber(accountTotals.spend);
-  $('accountFansTotal').textContent = accountTotals.fans;
-  $('avgFanCost').textContent = accountTotals.fans ? (accountTotals.spend / accountTotals.fans).toFixed(2) : '--';
-  $('fanCostTip').textContent = accountTotals.fans && accountTotals.spend / accountTotals.fans > 60 ? '🚨 偏高' : '✅ 正常';
-  $('accountLeadsTotal').textContent = accountTotals.leads;
-  $('salesSpendTotal').textContent = formatNumber(salesTotals.spend);
-  $('ordersTotal').textContent = salesTotals.orders;
-  $('conversionTotal').textContent = formatPercent(salesTotals.leads ? salesTotals.orders / salesTotals.leads : 0);
-  $('conversionTip').textContent = salesTotals.leads && salesTotals.orders / salesTotals.leads >= 0.05 ? '🔥 优秀（>5%）' : '继续优化';
-  $('salesPeopleTotal').textContent = new Set(list.map((record) => record.salesperson)).size;
-}
-
-function renderSalesSummary(list) {
-  const grouped = list.reduce((map, record) => {
-    const key = record.salesperson;
-    if (!map[key]) map[key] = { salesperson: key, accounts: new Set(), fans: 0, leads: 0, spend: 0, collected: 0, profit: 0, orders: 0 };
-    map[key].accounts.add(record.accountName);
-    map[key].fans += record.handledFans;
-    map[key].leads += record.handledLeads;
-    map[key].spend += record.salesSpend;
-    map[key].collected += record.collected;
-    map[key].profit += record.profit;
-    map[key].orders += record.orders;
+function groupBy(list, key) {
+  return Object.values(list.reduce((map, record) => {
+    const name = record[key] || '未命名';
+    if (!map[name]) map[name] = { name, ...emptyTotal() };
+    addRecord(map[name], record);
     return map;
-  }, {});
-  const rows = Object.values(grouped).sort((a, b) => b.profit - a.profit || b.orders - a.orders);
-  $('salesSummaryBody').innerHTML = rows.map((row) => `<tr><td><b>${escapeHtml(row.salesperson)}</b></td><td>${[...row.accounts].map((account) => `<span class="pill blue">${escapeHtml(account)}</span>`).join(' ')}</td><td>${row.fans}</td><td>${row.leads}</td><td class="orange">${formatNumber(row.spend)}</td><td class="green">${formatNumber(row.collected)}</td><td class="green">${formatNumber(row.profit)}</td><td>${row.orders}</td><td>${formatPercent(row.leads ? row.orders / row.leads : 0)}</td></tr>`).join('') || '<tr><td colspan="9" class="empty">暂无销售汇总</td></tr>';
+  }, {})).sort((a, b) => (b.amount - b.adSpend) - (a.amount - a.adSpend));
 }
 
-function renderRecords(list) {
-  $('recordsBody').innerHTML = list.map((record) => `<tr><td>${record.date}</td><td><b>${escapeHtml(record.accountName)}</b></td><td><span class="pill blue">${escapeHtml(record.platform)}</span></td><td><span class="pill purple">${escapeHtml(record.salesperson)}</span></td><td class="blue-text">${formatNumber(record.accountSpend)}</td><td>${record.accountLeads}</td><td class="blue-text">${record.unitPrice.toFixed(2)}</td><td>${record.handledFans}</td><td>${record.handledLeads}</td><td class="orange">${formatNumber(record.salesSpend)}</td><td class="green">${formatNumber(record.collected)}</td><td class="green">${formatNumber(record.profit)}</td><td>${record.orders}</td><td>${formatPercent(record.handledLeads ? record.orders / record.handledLeads : 0)}</td><td>${escapeHtml(record.note || '-')}</td><td class="actions"><button class="icon" onclick="editRecord('${record.id}')">✎</button><button class="icon danger-text" onclick="deleteRecord('${record.id}')">×</button></td></tr>`).join('');
-  $('emptyState').hidden = list.length > 0;
+function renderGrouped(targetId, rows, showRate) {
+  document.querySelector(`#${targetId}`).innerHTML = rows.map((row) => showRate
+    ? `<tr><td><b>${escapeHtml(row.name)}</b></td><td>${row.consultations}</td><td>${row.followers}</td><td>${row.deals}</td><td>${formatRate(row)}</td><td>${formatCurrency(row.amount)}</td><td>${formatCurrency(row.adSpend)}</td><td>${formatCurrency(row.amount - row.adSpend)}</td></tr>`
+    : `<tr><td><b>${escapeHtml(row.name)}</b></td><td>${row.consultations}</td><td>${row.followers}</td><td>${row.deals}</td><td>${formatCurrency(row.adSpend)}</td><td>${formatCurrency(row.amount - row.adSpend)}</td></tr>`
+  ).join('') || `<tr><td colspan="${showRate ? 8 : 6}" class="empty">暂无数据</td></tr>`;
 }
 
 function renderSchedule(list) {
-  const rows = Object.values(list.reduce((map, record) => {
-    if (!map[record.salesperson]) map[record.salesperson] = { salesperson: record.salesperson, leads: 0, orders: 0, profit: 0 };
-    map[record.salesperson].leads += record.handledLeads;
-    map[record.salesperson].orders += record.orders;
-    map[record.salesperson].profit += record.profit;
-    return map;
-  }, {})).sort((a, b) => (b.orders / Math.max(b.leads, 1)) - (a.orders / Math.max(a.leads, 1)) || b.profit - a.profit);
-  if (!rows.length) {
-    $('scheduleBody').innerHTML = '<p class="muted">录入销售记录后，会自动给出排班和账户分配建议。</p>';
+  const employees = groupBy(list, 'employee');
+  if (!employees.length) {
+    document.querySelector('#scheduleBody').innerHTML = '<p class="muted">录入数据后，会自动给出排班建议。</p>';
     return;
   }
-  $('scheduleBody').innerHTML = rows.map((row, index) => {
-    const rate = row.leads ? row.orders / row.leads : 0;
-    const level = rate >= 0.3 ? '主力班' : rate >= 0.1 ? '稳定班' : '培养班';
-    const suggestion = index === 0 ? '优先分配高质量留资账户' : rate < 0.1 ? '安排老员工带教，降低单日承接量' : '保持正常承接，关注利润';
-    return `<article><strong>${index + 1}. ${escapeHtml(row.salesperson)} · ${level}</strong><span>成单率 ${formatPercent(rate)}，利润 ${formatNumber(row.profit)} 元</span><p>${suggestion}</p></article>`;
+  document.querySelector('#scheduleBody').innerHTML = employees.map((employee, index) => {
+    const rate = employee.consultations ? employee.deals / employee.consultations : 0;
+    const level = rate >= 0.08 ? '主力班' : rate >= 0.03 ? '稳定班' : '培养班';
+    const advice = index === 0 ? '优先安排高质量广告账户' : rate < 0.03 ? '建议减少承接量并安排带教' : '正常排班，关注消费成本';
+    return `<article><strong>${escapeHtml(employee.name)} · ${level}</strong><span>成交率 ${formatRate(employee)}，利润 ${formatCurrency(employee.amount - employee.adSpend)}</span><p>${advice}</p></article>`;
   }).join('');
 }
 
-function editAccount(id) {
-  const account = state.accounts.find((item) => item.id === id);
-  if (!account) return;
-  $('accountId').value = account.id;
-  $('accountName').value = account.name;
-  $('platform').value = account.platform;
-  $('accountSpend').value = account.spend;
-  $('accountFans').value = account.fans;
-  $('accountLeads').value = account.leads;
-}
-
-function deleteAccount(id) {
-  if (state.records.some((record) => record.accountId === id) && !confirm('该账户已有销售记录，删除账户不会删除历史记录。确定删除？')) return;
-  state.accounts = state.accounts.filter((account) => account.id !== id);
-  persist();
-  render();
+function renderRows(list) {
+  document.querySelector('#recordsBody').innerHTML = list.map((record) => `<tr>
+    <td>${record.date}</td><td><b>${escapeHtml(record.employee)}</b></td><td>${escapeHtml(record.adAccount)}</td>
+    <td>${record.consultations}</td><td>${record.followers}</td><td>${record.deals}</td><td>${formatRate(record)}</td>
+    <td class="green">${formatCurrency(record.amount)}</td><td class="orange">${formatCurrency(record.adSpend)}</td><td class="blue-text">${formatCurrency(record.amount - record.adSpend)}</td><td>${escapeHtml(record.note || '-')}</td>
+    <td class="actions"><button class="icon" onclick="editRecord('${record.id}')">✎</button><button class="icon danger-text" onclick="deleteRecord('${record.id}')">×</button></td>
+  </tr>`).join('');
+  document.querySelector('#emptyState').hidden = list.length > 0;
 }
 
 function editRecord(id) {
-  const record = state.records.find((item) => item.id === id);
+  const record = records.find((item) => item.id === id);
   if (!record) return;
-  $('recordId').value = record.id;
-  $('date').value = record.date;
-  $('recordAccount').value = record.accountId;
-  fillAccountFields();
-  $('salesperson').value = record.salesperson;
-  $('handledFans').value = record.handledFans;
-  $('handledLeads').value = record.handledLeads;
-  $('orders').value = record.orders;
-  $('collected').value = record.collected;
-  $('note').value = record.note;
-  updateLiveCalc();
-  $('saveBtn').textContent = '更新销售记录';
+  for (const field of fields) document.querySelector(`#${field}`).value = field === 'recordId' ? record.id : (record[field] ?? '');
+  document.querySelector('#saveBtn').textContent = '更新记录';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
-function deleteRecord(id) {
-  if (!confirm('确定删除这条销售记录吗？')) return;
-  state.records = state.records.filter((record) => record.id !== id);
-  persist();
-  render();
-}
-
-function clearAllData() {
-  if (!confirm('确定清空所有账户和销售记录吗？此操作不可恢复。')) return;
-  state.accounts = [];
-  state.records = [];
-  persist();
-  render();
-}
-
+function deleteRecord(id) { if (confirm('确定删除这条记录吗？')) { records = records.filter((item) => item.id !== id); persist(); render(); } }
+function clearAllData() { if (confirm('确定清空所有数据吗？此操作不可恢复。')) { records = []; persist(); render(); } }
 function exportCsv() {
-  const header = ['日期', '账户', '平台', '销售', '账户总消耗', '总留资', '客单价', '销售粉丝', '销售留资', '销售消费', '收款', '利润', '销售订单', '成单率', '备注'];
-  const rows = filteredRecords().map((record) => [record.date, record.accountName, record.platform, record.salesperson, record.accountSpend, record.accountLeads, record.unitPrice.toFixed(2), record.handledFans, record.handledLeads, record.salesSpend.toFixed(2), record.collected, record.profit.toFixed(2), record.orders, formatPercent(record.handledLeads ? record.orders / record.handledLeads : 0), record.note]);
+  const header = ['日期', '销售员', '广告账户', '咨询量', '加粉量', '成交单数', '成交率', '成交金额', '广告账户当天消费', '利润', '备注'];
+  const rows = filteredRecords().map((record) => [record.date, record.employee, record.adAccount, record.consultations, record.followers, record.deals, formatRate(record), record.amount, record.adSpend, record.amount - record.adSpend, record.note]);
   const csv = [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\n');
   const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `旅游全维度看板-${new Date().toISOString().slice(0, 10)}.csv`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `旅游员工数据-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); URL.revokeObjectURL(link.href);
 }
-
-function createId() {
-  if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
-  return `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
+function emptyTotal() { return { consultations: 0, followers: 0, deals: 0, amount: 0, adSpend: 0 }; }
+function addRecord(sum, record) { sum.consultations += Number(record.consultations || 0); sum.followers += Number(record.followers || 0); sum.deals += Number(record.deals || 0); sum.amount += Number(record.amount || 0); sum.adSpend += Number(record.adSpend || 0); return sum; }
+function createId() { return window.crypto?.randomUUID ? window.crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 function csvCell(value) { return `"${String(value ?? '').replaceAll('"', '""')}"`; }
-function formatNumber(value) { return Number(value || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 }); }
-function formatPercent(value) { return `${(Number(value || 0) * 100).toFixed(1)}%`; }
+function formatRate(record) { return record.consultations ? `${((record.deals / record.consultations) * 100).toFixed(1)}%` : '0%'; }
+function formatCurrency(value) { return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(Number(value || 0)); }
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char])); }

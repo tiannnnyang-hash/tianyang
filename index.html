@@ -3,140 +3,61 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>旅游全维度看板</title>
+  <title>旅游员工数据看板</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
-      <div class="logo">📊</div>
-      <div>
-        <h1>旅游全维度看板</h1>
-        <p>账户池 · 销售筛选 · 利润 · 排班优化</p>
-      </div>
-    </div>
-    <div class="top-actions">
-      <button id="exportBtn" class="success">📥 导出CSV</button>
-      <button id="clearAllBtn" class="danger">🗑 清空所有数据</button>
-    </div>
+    <div class="brand"><div class="logo">📊</div><div><h1>旅游员工数据看板</h1><p>咨询 · 加粉 · 成交 · 广告账户消费</p></div></div>
+    <div class="top-actions"><button id="exportBtn" class="success">📥 导出CSV</button><button id="clearAllBtn" class="danger">🗑 清空所有数据</button></div>
   </header>
 
   <main>
-    <section class="filterbar panel soft">
-      <label>👩‍💼 销售员
-        <select id="salesFilter"><option value="">全部</option></select>
-      </label>
-      <label>🗓 开始日期
-        <input id="startDate" type="date">
-      </label>
-      <label>🗓 结束日期
-        <input id="endDate" type="date">
-      </label>
-      <button id="queryBtn">🔍 查询</button>
-      <button id="resetFilterBtn" class="ghost">重置</button>
+    <section class="panel filterbar">
+      <label>👩‍💼 销售员<select id="employeeFilter"><option value="">全部</option></select></label>
+      <label>🗓 开始日期<input id="startDate" type="date"></label>
+      <label>🗓 结束日期<input id="endDate" type="date"></label>
+      <button id="queryBtn">🔍 查询</button><button id="resetFilterBtn" class="ghost">重置</button>
       <span id="resultCount" class="count">共 0 条</span>
     </section>
 
-    <section>
-      <h2 class="section-chip blue">📈 账户维度（基于账户池，不累加销售消费）</h2>
-      <div class="metric-grid four">
-        <article class="metric blue"><span>💰 账户总消耗</span><strong id="accountSpendTotal">0</strong></article>
-        <article class="metric blue"><span>👥 总加粉</span><strong id="accountFansTotal">0</strong></article>
-        <article class="metric blue"><span>📈 平均加粉成本</span><strong id="avgFanCost">--</strong><em id="fanCostTip">--</em></article>
-        <article class="metric blue"><span>📊 总留资</span><strong id="accountLeadsTotal">0</strong></article>
-      </div>
-    </section>
-
-    <section>
-      <h2 class="section-chip purple">🕴 销售维度（销售实际消费汇总）</h2>
-      <div class="metric-grid four">
-        <article class="metric purple"><span>💵 销售总消费</span><strong id="salesSpendTotal">0</strong></article>
-        <article class="metric purple"><span>📦 销售总订单</span><strong id="ordersTotal">0</strong></article>
-        <article class="metric purple"><span>📊 整体转化率</span><strong id="conversionTotal">0%</strong><em id="conversionTip">--</em></article>
-        <article class="metric purple"><span>👥 参与销售人数</span><strong id="salesPeopleTotal">0</strong></article>
-      </div>
+    <section class="metric-grid">
+      <article class="metric"><span>📞 总咨询量</span><strong id="totalConsultations">0</strong></article>
+      <article class="metric"><span>👥 总加粉量</span><strong id="totalFollowers">0</strong></article>
+      <article class="metric"><span>✅ 总成交单数</span><strong id="totalDeals">0</strong></article>
+      <article class="metric"><span>📊 成交率</span><strong id="avgRate">0%</strong></article>
+      <article class="metric"><span>💰 成交金额</span><strong id="totalAmount">¥0</strong></article>
+      <article class="metric"><span>📣 广告消费</span><strong id="totalAdSpend">¥0</strong></article>
+      <article class="metric"><span>📈 利润</span><strong id="totalProfit">¥0</strong></article>
     </section>
 
     <section class="panel accent-blue">
-      <div class="panel-title">
-        <h2>📂 账户池 <small>（先建账户，再录销售）</small></h2>
-        <span id="accountCount" class="muted">共 0 个账户</span>
-      </div>
-      <form id="accountForm" class="account-grid">
-        <input type="hidden" id="accountId">
-        <label>🏷 账户名<input id="accountName" placeholder="如：川藏线专营" required></label>
-        <label>📱 平台
-          <select id="platform">
-            <option>抖音巨量</option><option>小红书聚光</option><option>三亚度假</option><option>视频号</option><option>其他</option>
-          </select>
-        </label>
-        <label>💰 账户总消耗(元)<input id="accountSpend" type="number" min="0" step="0.01" placeholder="如：1000" required></label>
-        <label>👥 账户总加粉<input id="accountFans" type="number" min="0" step="1" placeholder="如：5" required></label>
-        <label>📊 账户总留资<input id="accountLeads" type="number" min="0" step="1" placeholder="如：5" required></label>
-        <button type="submit">➕ 添加账户</button>
-      </form>
-      <div id="accountChips" class="chips"></div>
-    </section>
-
-    <section class="panel accent-purple">
-      <div class="panel-title">
-        <h2>🖊 录入销售记录 <small>（选账户自动带出数据，填写销售拆分 + 收款算利润）</small></h2>
-      </div>
-      <form id="recordForm" class="record-grid">
+      <div class="panel-title"><h2>🖊 新增 / 编辑每日记录</h2><p>成交率自动按“成交单数 ÷ 咨询量”计算。</p></div>
+      <form id="recordForm" class="form-grid">
         <input type="hidden" id="recordId">
-        <label>🗓 日期<input id="date" type="date" required></label>
-        <label>📂 选择账户<select id="recordAccount" required><option value="">-- 请选择 --</option></select></label>
-        <label>💰 账户总消耗<input id="recordAccountSpend" type="number" readonly></label>
-        <label>📊 账户总留资<input id="recordAccountLeads" type="number" readonly></label>
-        <label>📈 客单价<input id="unitPrice" type="number" readonly></label>
-        <label>👥 账户总加粉<input id="recordAccountFans" type="number" readonly></label>
-        <div class="divider">⬇ 该销售拆分数据（填下面 5 项）</div>
-        <label>👩‍💼 销售员<input id="salesperson" placeholder="如：张伟" required></label>
-        <label>📌 该销售承接粉丝<input id="handledFans" type="number" min="0" step="1" placeholder="如：2" required></label>
-        <label>📌 该销售承接留资<input id="handledLeads" type="number" min="0" step="1" placeholder="如：2" required></label>
-        <label class="auto-field">💵 该销售消费（自动）<input id="salesSpend" type="number" readonly></label>
-        <label>✅ 该销售成交订单<input id="orders" type="number" min="0" step="1" placeholder="如：1" required></label>
-        <label class="money-field">💰 收款金额（元）<input id="collected" type="number" min="0" step="0.01" value="0" required></label>
-        <label class="auto-field">💵 利润（自动）<input id="profit" type="number" readonly></label>
-        <label>📝 备注<input id="note" placeholder="素材/异常"></label>
-        <div class="form-actions wide">
-          <button type="submit" id="saveBtn">➕ 添加销售记录</button>
-          <button type="button" id="resetBtn" class="ghost">清空表单</button>
-        </div>
+        <label>日期<input id="date" type="date" required></label>
+        <label>销售员<input id="employee" placeholder="如：小甜" required></label>
+        <label>广告账户<input id="adAccount" placeholder="如：川藏线账户" required></label>
+        <label>咨询量<input id="consultations" type="number" min="0" step="1" value="0" required></label>
+        <label>加粉量<input id="followers" type="number" min="0" step="1" value="0" required></label>
+        <label>成交单数<input id="deals" type="number" min="0" step="1" value="0" required></label>
+        <label>成交金额<input id="amount" type="number" min="0" step="0.01" value="0" required></label>
+        <label>广告账户当天消费<input id="adSpend" type="number" min="0" step="0.01" value="0" required></label>
+        <label>备注<input id="note" placeholder="素材/异常"></label>
+        <div class="form-actions"><button type="submit" id="saveBtn">保存记录</button><button type="button" id="resetBtn" class="ghost">清空表单</button></div>
       </form>
-      <div id="liveCalc" class="livecalc">📈 客单价：-- 元/留资　💵 该销售消费：-- 元　💵 利润：-- 元　📊 成单率：--</div>
     </section>
 
-    <section class="panel accent-green">
-      <div class="panel-title">
-        <h2>🗓 智能排班建议 <small>（按员工承接量和转化率优化分配）</small></h2>
-      </div>
-      <div id="scheduleBody" class="schedule"></div>
+    <section class="grid-two">
+      <div class="panel"><div class="panel-title"><h2>👩‍💼 员工汇总</h2><p>每个员工单独统计。</p></div><div class="table-wrap"><table><thead><tr><th>员工</th><th>咨询</th><th>加粉</th><th>成交</th><th>成交率</th><th>金额</th><th>广告消费</th><th>利润</th></tr></thead><tbody id="employeeSummaryBody"></tbody></table></div></div>
+      <div class="panel"><div class="panel-title"><h2>📣 广告账户消费</h2><p>查看每个账户每天/累计消费。</p></div><div class="table-wrap"><table><thead><tr><th>广告账户</th><th>咨询</th><th>加粉</th><th>成交</th><th>消费</th><th>利润</th></tr></thead><tbody id="accountSummaryBody"></tbody></table></div></div>
     </section>
 
-    <section class="panel">
-      <div class="panel-title"><h2>👩‍💼 各销售业绩明细 <small>（销售消费 = 客单价 × 该销售留资数 · 利润 = 收款 - 消费）</small></h2></div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>销售员</th><th>所属账户</th><th>承接粉丝</th><th>承接留资</th><th>销售消费(元)</th><th>收款(元)</th><th>利润(元)</th><th>成交订单</th><th>成单率</th></tr></thead>
-          <tbody id="salesSummaryBody"></tbody>
-        </table>
-      </div>
-    </section>
+    <section class="panel accent-green"><div class="panel-title"><h2>🗓 排班优化建议</h2><p>按成交率和利润给出简单分配建议。</p></div><div id="scheduleBody" class="schedule"></div></section>
 
     <section class="panel">
-      <div class="panel-title">
-        <h2>📋 销售明细记录</h2>
-        <div class="filters"><label>账户 <select id="accountFilter"><option value="">全部</option></select></label><label>销售 <input id="textFilter" placeholder="输入"></label></div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>日期</th><th>账户</th><th>平台</th><th>销售</th><th>账户总消耗</th><th>总留资</th><th>客单价</th><th>销售粉丝</th><th>销售留资</th><th>销售消费</th><th>收款</th><th>利润</th><th>销售订单</th><th>成单率</th><th>备注</th><th>操作</th></tr></thead>
-          <tbody id="recordsBody"></tbody>
-        </table>
-        <p id="emptyState" class="empty">还没有销售记录，请先添加账户并录入销售记录。</p>
-      </div>
-      <p id="storageTip" class="storage-tip">💡 数据保存在本地浏览器</p>
+      <div class="panel-title"><h2>📋 每日明细</h2><div class="filters"><input id="search" placeholder="搜索员工/账户/备注"></div></div>
+      <div class="table-wrap"><table><thead><tr><th>日期</th><th>销售员</th><th>广告账户</th><th>咨询</th><th>加粉</th><th>成交</th><th>成交率</th><th>成交金额</th><th>广告消费</th><th>利润</th><th>备注</th><th>操作</th></tr></thead><tbody id="recordsBody"></tbody></table><p id="emptyState" class="empty">还没有记录，请先新增一条数据。</p></div>
     </section>
   </main>
   <script src="app.js"></script>
