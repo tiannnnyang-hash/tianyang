@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>旅游员工数据看板</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><div class="logo">📊</div><div><h1>旅游员工数据看板</h1><p>咨询 · 加粉 · 成交 · 广告账户消费</p></div></div>
+    <div class="top-actions"><button id="exportBtn" class="success">📥 导出CSV</button><button id="clearAllBtn" class="danger">🗑 清空所有数据</button></div>
+  </header>
+
+  <main>
+    <section class="panel filterbar">
+      <label>👩‍💼 销售员<select id="employeeFilter"><option value="">全部</option></select></label>
+      <label>🗓 开始日期<input id="startDate" type="date"></label>
+      <label>🗓 结束日期<input id="endDate" type="date"></label>
+      <button id="queryBtn">🔍 查询</button><button id="resetFilterBtn" class="ghost">重置</button>
+      <span id="resultCount" class="count">共 0 条</span>
+    </section>
+
+    <section class="metric-grid">
+      <article class="metric"><span>📞 总咨询量</span><strong id="totalConsultations">0</strong></article>
+      <article class="metric"><span>👥 总加粉量</span><strong id="totalFollowers">0</strong></article>
+      <article class="metric"><span>✅ 总成交单数</span><strong id="totalDeals">0</strong></article>
+      <article class="metric"><span>📊 成交率</span><strong id="avgRate">0%</strong></article>
+      <article class="metric"><span>💰 成交金额</span><strong id="totalAmount">¥0</strong></article>
+      <article class="metric"><span>📣 广告消费</span><strong id="totalAdSpend">¥0</strong></article>
+      <article class="metric"><span>📈 利润</span><strong id="totalProfit">¥0</strong></article>
+    </section>
+
+    <section class="panel accent-blue">
+      <div class="panel-title"><h2>🖊 新增 / 编辑每日记录</h2><p>成交率自动按“成交单数 ÷ 咨询量”计算。</p></div>
+      <form id="recordForm" class="form-grid">
+        <input type="hidden" id="recordId">
+        <label>日期<input id="date" type="date" required></label>
+        <label>销售员<input id="employee" placeholder="如：小甜" required></label>
+        <label>广告账户<input id="adAccount" placeholder="如：川藏线账户" required></label>
+        <label>咨询量<input id="consultations" type="number" min="0" step="1" value="0" required></label>
+        <label>加粉量<input id="followers" type="number" min="0" step="1" value="0" required></label>
+        <label>成交单数<input id="deals" type="number" min="0" step="1" value="0" required></label>
+        <label>成交金额<input id="amount" type="number" min="0" step="0.01" value="0" required></label>
+        <label>广告账户当天消费<input id="adSpend" type="number" min="0" step="0.01" value="0" required></label>
+        <label>备注<input id="note" placeholder="素材/异常"></label>
+        <div class="form-actions"><button type="submit" id="saveBtn">保存记录</button><button type="button" id="resetBtn" class="ghost">清空表单</button></div>
+      </form>
+    </section>
+
+    <section class="grid-two">
+      <div class="panel"><div class="panel-title"><h2>👩‍💼 员工汇总</h2><p>每个员工单独统计。</p></div><div class="table-wrap"><table><thead><tr><th>员工</th><th>咨询</th><th>加粉</th><th>成交</th><th>成交率</th><th>金额</th><th>广告消费</th><th>利润</th></tr></thead><tbody id="employeeSummaryBody"></tbody></table></div></div>
+      <div class="panel"><div class="panel-title"><h2>📣 广告账户消费</h2><p>查看每个账户每天/累计消费。</p></div><div class="table-wrap"><table><thead><tr><th>广告账户</th><th>咨询</th><th>加粉</th><th>成交</th><th>消费</th><th>利润</th></tr></thead><tbody id="accountSummaryBody"></tbody></table></div></div>
+    </section>
+
+    <section class="panel accent-green"><div class="panel-title"><h2>🗓 排班优化建议</h2><p>按成交率和利润给出简单分配建议。</p></div><div id="scheduleBody" class="schedule"></div></section>
+
+    <section class="panel">
+      <div class="panel-title"><h2>📋 每日明细</h2><div class="filters"><input id="search" placeholder="搜索员工/账户/备注"></div></div>
+      <div class="table-wrap"><table><thead><tr><th>日期</th><th>销售员</th><th>广告账户</th><th>咨询</th><th>加粉</th><th>成交</th><th>成交率</th><th>成交金额</th><th>广告消费</th><th>利润</th><th>备注</th><th>操作</th></tr></thead><tbody id="recordsBody"></tbody></table><p id="emptyState" class="empty">还没有记录，请先新增一条数据。</p></div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
